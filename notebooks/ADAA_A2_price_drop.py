@@ -47,7 +47,7 @@ BUCKET_NAMES = ["1-7 days", "8-14 days", "15-28 days", "no drop in 28 days"]
 NO_DROP = 3                    # index of the "no drop" class
 DECISION_START, DECISION_END = pd.Timestamp("2026-06-01"), pd.Timestamp("2026-08-31")
 
-DATA_BASE_URL = "https://raw.githubusercontent.com/GITHUB_USER/GITHUB_REPO/main/data"
+DATA_BASE_URL = "https://raw.githubusercontent.com/Arham2702/jbhifi-price-drop-ml/main/data"
 DATA_DIR = Path("data") if Path("data").exists() else (Path("../data") if Path("../data").exists() else Path("data"))
 FIG_DIR = Path("../report/figures") if Path("../report").exists() else Path("figures")
 FIG_DIR.mkdir(parents=True, exist_ok=True)
@@ -73,8 +73,7 @@ def savefig(name):
 # | `tgg_prices` | one model number on one The Good Guys scrape date | `model_number, date, tgg_price` |
 #
 # The export already restricted JB rows to 10 appliance categories, price >= $50, from 1 May 2026, and SKUs that were buyable on at least 20 scrape days.
-# To keep the snapshot small enough for GitHub and Colab, it is a **20% random sample of products** (SKUs whose hash falls in 4 of 20 buckets:
-# `abs(hashtext(sku)) % 20 < 4`); all price rows of a sampled product are kept.
+# This is the **full** filtered catalogue (about 9 MB in total), so the notebook downloads it in seconds on Colab.
 
 # %%
 def load(name):
@@ -662,9 +661,10 @@ print(missed.nlargest(5, "missed")[["date", "title", "product_type", "price", "d
 # %% [markdown]
 # ## 10. Top-10 flagships and the deployment interface
 #
-# **Selection rule (reproducible).** For each of the 10 categories: among products still listed and buyable on the JB website
-# (`jb_catalog_latest`), take the SKU with the most complete scrape history (coverage rounded to 5%), preferring products that
-# The Good Guys also sells (a popularity proxy: mainstream models are stocked by several retailers), then the highest price.
+# **Selection rule (reproducible).** For each of the 10 main categories: among products still listed and buyable on the JB website
+# (`jb_catalog_latest`) whose scrape coverage is within 10 points of the best-covered product in the category
+# (2026 TVs launched after scraping began, so an absolute threshold would exclude them), prefer products that The Good Guys also sells
+# (a popularity proxy: mainstream models are stocked by several retailers), then take the highest price (the category flagship).
 #
 # The final model is refit on all labelled samples and exposed through `predict_drop(sku, as_of_date)`.
 
@@ -673,9 +673,11 @@ coverage = pd.Series((~np.isnan(P)).sum(0) / len(scrape_dates), index=skus, name
 listed = catalog[catalog.jb_listing_cta == "Buy"][["sku", "price"]].rename(columns={"price": "price_now"})
 cand = (listed.merge(coverage, left_on="sku", right_index=True)
         .merge(products[["sku", "title", "product_type", "model_number"]], on="sku"))
-cand["coverage_5pct"] = (cand.coverage * 20).round() / 20
+main_types = products.product_type.value_counts().index[:10]
+cand = cand[cand.product_type.isin(main_types)]
+cand = cand[cand.coverage >= cand.groupby("product_type").coverage.transform("max") - 0.1].copy()
 cand["at_tgg"] = cand.model_number.isin(tgg.model_number)
-top10 = (cand.sort_values(["product_type", "coverage_5pct", "at_tgg", "price_now"], ascending=[True, False, False, False])
+top10 = (cand.sort_values(["product_type", "at_tgg", "price_now"], ascending=[True, False, False])
          .groupby("product_type").head(1).reset_index(drop=True))
 top10[["product_type", "sku", "title", "price_now", "coverage", "at_tgg"]]
 

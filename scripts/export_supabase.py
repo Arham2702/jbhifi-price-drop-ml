@@ -6,7 +6,7 @@ Usage (from the ADAA folder):
 
 Requires SUPABASE_DB_URL in ADAA/.env. The session is forced read-only, so the
 database rejects any INSERT/UPDATE/DELETE/DDL even if one were issued.
-The submitted snapshot is the 20% sample (hash buckets 0-3 of abs(hashtext(sku)) % 20).
+The submitted snapshot is the full export (no --sample-buckets).
 """
 
 import argparse

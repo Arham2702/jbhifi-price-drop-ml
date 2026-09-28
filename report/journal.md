@@ -9,11 +9,11 @@ date: "28 September 2026"
 
 Colab notebook (public, self-contained):
 
-COLAB_URL
+https://colab.research.google.com/github/Arham2702/jbhifi-price-drop-ml/blob/main/notebooks/ADAA_A2_price_drop.ipynb
 
 Source repository (notebook, data snapshot, export script):
 
-REPO_URL
+https://github.com/Arham2702/jbhifi-price-drop-ml
 
 # 2. Project report
 
@@ -27,7 +27,7 @@ which pricing patterns tend to come before a drop.
 
 **Why machine learning.** A hand-written rule cannot capture the many interacting signals (recent price rises, promotion flags, stock status,
 category-specific pricing cycles, brand). Conditions for learning are met: the outcome (a later price) is observed automatically, labelled examples are plentiful
-(33,486 decision points across 3,051 products in the analysed snapshot), and patterns plausibly generalise across products because retailers apply similar
+(175,038 decision points across 15,322 products), and patterns plausibly generalise across products because retailers apply similar
 pricing mechanics (promotional cycles, clearance, price matching) across the catalogue.
 
 **Unit of prediction.** One *sample* is one product (SKU) that is buyable on the JB Hi-Fi website on a decision day *t*.
@@ -60,7 +60,7 @@ Deployment interface in the notebook: `predict_drop(sku, as_of_date) -> {p_bucke
 **Ground truth.** For a past decision day the true bucket and depth are read off the later scrapes $t+1 \dots t+28$. Only decision days up to 31 August are
 used, because their full 28-day future is observed by the last scrape (28 September). Later days have unknown (right-censored) outcomes and are excluded.
 
-**Core challenges identified.** (i) Drops are rare (16.9% of decision points are followed by a >= 5% drop within 28 days), so accuracy is meaningless and probability quality matters;
+**Core challenges identified.** (i) Drops are rare (16.3% of decision points are followed by a >= 5% drop within 28 days), so accuracy is meaningless and probability quality matters;
 (ii) samples from the same product are correlated, so evaluation must hold out whole products; (iii) the training loss (cross-entropy over buckets)
 is not the shopper's objective (dollars saved), so a separate business metric is needed; (iv) only ~5 months of data, so yearly sales events
 (Black Friday, Boxing Day) are absent.
@@ -82,12 +82,11 @@ Supabase (my scraper's tables) --read-only export--> Parquet snapshot (GitHub)
 ```
 
 **Data.** My own Supabase database (`All JB Hifi Products`, 6.07M rows, 132,897 SKUs). The export keeps 10 appliance categories
-(TVs, computers, phones, audio, games hardware, whitegoods, small appliances, cameras, wearables, smart home), price >= $50, from 1 May 2026,
+(TVs, computers, phones, audio, games hardware, whitegoods, small appliances, cameras, wearables & outdoor, health & beauty), price >= $50, from 1 May 2026,
 and SKUs buyable on at least 20 scrape days. Accessories, IT peripherals and categories with no observed drops were excluded.
-The analysed snapshot is a **20% random sample of products** (hash of SKU in 4 of 20 buckets; all rows of a sampled product kept):
-3,051 products, 167,032 SKU-day price rows, plus 48,602 The Good Guys price rows for matching model numbers. The sample keeps the
-public snapshot small enough for GitHub/Colab; `scripts/export_supabase.py` regenerates it (or the full catalogue) from the database.
-After weekly sampling of decision dates (13 dates, 8 Jun - 31 Aug) there are **33,486 labelled samples**.
+The snapshot (about 9 MB of Parquet, published with the notebook) has **15,322 products and 877,585 SKU-day price rows**, plus 398,712 The Good Guys
+price rows for matching model numbers; `scripts/export_supabase.py` regenerates it from the database.
+After weekly sampling of decision dates (13 dates, 8 Jun - 31 Aug) there are **175,038 labelled samples**.
 
 ### Model and justification
 
@@ -127,20 +126,21 @@ A neural sequence model was considered but would need more data per product than
 
 ## 2.3 Results
 
-**Label distribution.** 1-7 days: 5.9%, 8-14 days: 4.9%, 15-28 days: 6.1%, no drop within 28 days: 83.1%.
+**Label distribution.** 1-7 days: 5.8%, 8-14 days: 4.8%, 15-28 days: 5.7%, no drop within 28 days: 83.7%.
 
 ### Main result: 5-fold GroupKFold on unseen products (mean ± std over folds)
 
 | model | log loss (lower better) | Brier | ROC-AUC | PR-AUC | ECE |
 |---|---|---|---|---|---|
-| Baseline A: overall class frequencies | 0.640 ± 0.017 | 0.300 ± 0.010 | 0.500 | 0.169 ± 0.006 | 0.005 |
-| Baseline B: class frequencies per category | 0.618 ± 0.014 | 0.292 ± 0.008 | 0.649 ± 0.011 | 0.250 ± 0.016 | 0.012 |
-| **LightGBM** | **0.405 ± 0.011** | **0.196 ± 0.005** | **0.906 ± 0.009** | **0.722 ± 0.017** | 0.016 ± 0.006 |
+| Baseline A: overall class frequencies | 0.624 ± 0.005 | 0.291 ± 0.003 | 0.500 | 0.163 ± 0.002 | 0.002 |
+| Baseline B: class frequencies per category | 0.601 ± 0.005 | 0.283 ± 0.003 | 0.655 ± 0.005 | 0.247 ± 0.005 | 0.003 |
+| **LightGBM** | **0.271 ± 0.008** | **0.130 ± 0.004** | **0.953 ± 0.003** | **0.852 ± 0.006** | 0.008 ± 0.002 |
 
-* Skill vs the per-category baseline: **34.5%** lower log loss, **33.1%** lower Brier score.
-* 95% bootstrap CIs (resampling SKUs): PR-AUC LightGBM [0.698, 0.747] vs baseline B [0.238, 0.267]; log loss [0.386, 0.425] vs [0.599, 0.640]. The intervals do not overlap.
-* Calibration: the reliability curve lies on the diagonal (ECE 0.016): when the model says 30%, about 30% of those products drop.
-* **Drop depth** (samples with a drop): MAE **5.0 percentage points ($42.66)** vs 8.1 pp ($64.40) for the per-category median baseline.
+* Skill vs the per-category baseline: **54.9%** lower log loss, **54.0%** lower Brier score.
+* 95% bootstrap CIs (resampling SKUs): PR-AUC LightGBM [0.846, 0.860] vs baseline B [0.245, 0.261]; log loss [0.263, 0.278] vs [0.592, 0.610]. The intervals do not overlap.
+* Calibration: the reliability curve lies on the diagonal (ECE 0.008): when the model says 30%, about 30% of those products drop.
+* **Drop depth** (samples with a drop): MAE **3.8 percentage points ($32.56)** vs 7.9 pp ($62.99) for the per-category median baseline.
+* Every category beats its baseline; the weakest is games hardware (PR-AUC 0.70 vs 0.14), the strongest phones (0.95 vs 0.26).
 
 ![Reliability curve (left) and PR-AUC per category against the random-guess level (right).](figures/calibration_and_categories.png)
 
@@ -148,72 +148,82 @@ A neural sequence model was considered but would need more data per product than
 
 | true \\ predicted | 1-7 d | 8-14 d | 15-28 d | no drop |
 |---|---|---|---|---|
-| 1-7 days | **0.46** | 0.05 | 0.03 | 0.47 |
-| 8-14 days | 0.10 | **0.36** | 0.06 | 0.49 |
-| 15-28 days | 0.07 | 0.05 | **0.24** | 0.63 |
+| 1-7 days | **0.65** | 0.04 | 0.03 | 0.29 |
+| 8-14 days | 0.07 | **0.60** | 0.04 | 0.29 |
+| 15-28 days | 0.05 | 0.04 | **0.51** | 0.40 |
 | no drop | 0.01 | 0.01 | 0.01 | **0.98** |
 
-Near-term drops are recognised best; drops 15-28 days away are mostly predicted as "no drop" — the further ahead, the less the current price pattern says.
+Near-term drops are recognised best; drops 15-28 days away are predicted as "no drop" 40% of the time — the further ahead, the less the current price pattern says.
 
-**What the model uses** (share of split gain): `vendor` 21.6%, `last_change_pct` 11.0%, `rel_min_all` 10.3%, `log_price` 9.6%, `age_days` 6.6%, `days_since_drop` 5.4%.
+**What the model uses** (share of split gain): `vendor` 23.0%, `rel_min_all` 10.5%, `last_change_pct` 10.5%, `log_price` 10.1%, `age_days` 7.1%, `days_since_drop` 5.3%.
 The dominant pattern (visible in the Top-10 plots) is JB's promotional cycle: a product that has just returned from a sale price to its regular price
 (`last_change_pct` > 0, price well above its historical minimum) is likely to be discounted again soon.
 
 ![Feature importance.](figures/feature_importance.png)
 
-### Secondary result: later time period (train decisions <= 15 Jul, test 12-31 Aug; 14,567 / 8,447 samples)
+### Secondary result: later time period (train decisions <= 15 Jul, test 12-31 Aug; 80,173 / 42,314 samples)
 
 | model | log loss | Brier | ROC-AUC | PR-AUC | ECE |
 |---|---|---|---|---|---|
-| Baseline A: overall | 0.605 | 0.280 | 0.500 | 0.157 | 0.012 |
-| Baseline B: per category | 0.590 | 0.273 | 0.657 | 0.239 | 0.017 |
-| **LightGBM** | **0.541** | **0.244** | **0.821** | **0.517** | 0.046 |
-| LightGBM + class weights | 0.626 | 0.276 | 0.811 | 0.510 | 0.083 |
-| LightGBM without `vendor` | 0.541 | 0.247 | 0.797 | 0.485 | 0.039 |
+| Baseline A: overall | 0.604 | 0.280 | 0.500 | 0.156 | 0.004 |
+| Baseline B: per category | **0.580** | 0.272 | 0.667 | 0.243 | 0.022 |
+| **LightGBM** | 0.640 | 0.259 | **0.824** | **0.508** | 0.071 |
+| LightGBM + class weights | 0.678 | 0.274 | 0.816 | 0.492 | 0.080 |
+| LightGBM without `vendor` | 0.605 | **0.259** | 0.787 | 0.463 | 0.058 |
 
-The model still clearly beats both baselines on a later period, but by less (PR-AUC 0.52 vs 0.72; log-loss skill vs baseline B 8% vs 35%).
-Class weighting did not improve ranking and made probabilities worse (ECE doubled), confirming the decision to train unweighted.
+On a later period the picture is mixed. The model still **ranks** products far better than the baselines (PR-AUC 0.51 vs 0.24, ROC-AUC 0.82 vs 0.67)
+and has the best Brier score, but its **log loss is worse than the per-category baseline** (0.640 vs 0.580) and it is less well calibrated (ECE 0.071).
+Log loss punishes confident mistakes very heavily: promotions in late August did not repeat July's pattern for some brands, and the model was confidently wrong on them.
+So the model is reliable for *ordering* products by how likely they are to drop, but its probabilities should be recalibrated on recent data before being shown to users (section 2.4).
+Class weighting made both ranking and calibration worse, confirming the decision to train unweighted.
 
 ### Business metric: buy-or-wait simulation (out-of-fold predictions, threshold tuned on the other folds)
 
 | policy | mean $ saved per purchase | mean % saved | share of oracle savings | WAIT rate | mean days waited | $ saved per day waited |
 |---|---|---|---|---|---|---|
 | Buy now | 0.00 | 0.00 | 0% | 0% | 0 | — |
-| Always wait (buy at first drop, else day 28) | 7.03 | −0.06 | 26% | 100% | 25.3 | 0.28 |
-| **Model** (WAIT if P(drop) > τ, τ = 0.20 in every fold) | **21.94** | **2.54** | **80%** | 24% | **4.6** | **4.76** |
-| Oracle (knows the future) | 27.32 | 3.33 | 100% | 18% | 2.4 | 11.59 |
+| Always wait (buy at first drop, else day 28) | 8.53 | −0.29 | 31% | 100% | 25.4 | 0.34 |
+| **Model** (WAIT if P(drop) > τ, τ = 0.15 in every fold) | **23.57** | **2.62** | **86%** | 23% | **4.1** | **5.73** |
+| Oracle (knows the future) | 27.29 | 3.19 | 100% | 17% | 2.3 | 11.92 |
 
-95% bootstrap CI for the model's mean saving: **[$19.41, $25.15]** per purchase. Following the model captures 80% of the savings a perfect-foresight
-shopper would get, while waiting on average under 5 days; "always wait" makes shoppers wait 25 days for a third of the benefit
-(and on average *loses* 0.06% because prices sometimes rise while waiting).
+95% bootstrap CI for the model's mean saving: **[$22.31, $24.82]** per purchase. Following the model captures 86% of the savings a perfect-foresight
+shopper would get, while waiting on average about 4 days; "always wait" makes shoppers wait 25 days for a third of the benefit
+(and on average *loses* 0.29% of the price, because prices sometimes rise while waiting).
 
 ![Mean saving and WAIT rate against the decision threshold.](figures/savings_vs_threshold.png)
 
-### Research question: do The Good Guys' prices help? (GroupKFold on 4,421 matched samples, 407 products)
+### Research question: do The Good Guys' prices help? (GroupKFold on 22,373 matched samples, 2,095 products)
 
 | features | log loss | Brier | ROC-AUC | PR-AUC | ECE | best mean saving |
 |---|---|---|---|---|---|---|
-| JB features only | 0.740 | 0.377 | 0.880 | **0.804** | 0.023 | **$58.28** |
-| JB + The Good Guys (`tgg_gap`, `tgg_ret_7`, `tgg_cheaper`) | **0.735** | **0.373** | **0.884** | 0.800 | **0.018** | $58.08 |
+| JB features only | 0.530 | 0.264 | 0.938 | 0.900 | 0.019 | $67.37 |
+| JB + The Good Guys (`tgg_gap`, `tgg_ret_7`, `tgg_cheaper`) | **0.522** | **0.260** | **0.940** | **0.904** | **0.016** | **$68.17** |
 
-Answer: **no meaningful improvement.** Competitor features slightly improve probability quality (log loss, ECE) but not ranking or savings.
-Products sold by both retailers drop much more often (36% vs 17%), but JB's own price history already carries the signal.
+Answer: **a small, consistent improvement.** Competitor features improve every metric slightly (log loss −1.5%, PR-AUC +0.004, +$0.80 saved per purchase),
+consistent with price matching, but the gain is small compared with what JB's own price history provides.
+Products sold by both retailers drop much more often (36% vs 16%), so they are also where a shopper gains most from waiting.
 
 ### Top-10 flagships (deployment demo, as of 28 Sep 2026)
 
-One flagship per category from the 20% sample (no Smart Home product met the rule in the sample, so 9 are shown):
+One flagship per category, chosen by a fixed rule: still listed and buyable, scrape coverage within 10 points of the best in its category,
+preferring products The Good Guys also sells, then the highest price.
 
 | category | product | price now | P(drop ≤ 28 d) | expected drop if it drops | recommendation |
 |---|---|---|---|---|---|
-| Audio | Sony BRAVIA Theatre System 6 | $1,199 | 0.998 | 24.8% (→ $902) | WAIT |
-| Cameras | Canon EOS R50 twin lens kit | $1,699 | 0.562 | 12.1% (→ $1,494) | WAIT |
-| Phones | Apple iPhone Air 1TB | $3,099 | 0.065 | 17.0% | BUY NOW |
-| Computers | Apple MacBook Pro 16" M5 Max 2TB | $6,999 | 0.001 | 13.3% | BUY NOW |
-| Games hardware | Xbox Series X 1TB Digital | $999 | 0.194 | 19.7% | BUY NOW |
-| Small appliances | Jura Z10 coffee machine | $4,499 | 0.009 | 9.9% | BUY NOW |
-| TVs | Samsung 65" R95H Micro RGB [2026] | $5,295 | 0.721 | 18.7% (→ $4,304) | WAIT |
-| Whitegoods | LG 642L French Door Fridge | $4,799 | 0.974 | 17.0% (→ $3,985) | WAIT |
-| Wearables & Outdoor | Pioneer SPH-EVO107DAB AV receiver | $1,249 | 0.075 | 13.3% | BUY NOW |
+| Audio | JBL BAR 1300 MK2 soundbar | $1,999 | 0.016 | 9.8% | BUY NOW |
+| Cameras | Antigravity A1 8K 360 drone bundle | $2,799 | 0.128 | 17.1% | BUY NOW |
+| Phones | Apple iPhone Air 1TB | $3,099 | 0.007 | 17.3% | BUY NOW |
+| Computers | Apple MacBook Pro 16" M5 Max 2TB | $7,999 | 0.000 | 17.5% | BUY NOW |
+| Games hardware | Xbox Series X 1TB Digital | $999 | 0.015 | 19.6% | BUY NOW |
+| Health & beauty | NutriBullet Baby Steam & Blend | $179 | 0.985 | 20.5% (→ $142) | WAIT |
+| Small appliances | Jura Z10 coffee machine | $4,499 | 0.009 | 5.1% | BUY NOW |
+| TVs | LG 97" OLED evo G6 [2026] | $29,995 | 0.677 | 9.0% (→ $27,287) | WAIT |
+| Whitegoods | ASKO heat-pump drying cabinet | $6,999 | 0.007 | 6.8% | BUY NOW |
+| Wearables & Outdoor | Pioneer SPH-EVO107DAB AV receiver | $1,249 | 0.096 | 8.3% | BUY NOW |
+
+Most flagships get BUY NOW: their prices have been flat for two weeks or more, a pattern that rarely precedes a drop within 28 days (Apple products
+are also rarely discounted by JB, which the `vendor` feature captures). The two WAIT calls both returned to full price on 25 September after a discount
+(NutriBullet $149 → $179, LG 97" OLED $27,884 → $29,995) — the promotional-cycle pattern the model relies on most.
 
 ![Top-10 price histories (blue), actual >= 5% drops (red), and the model's out-of-fold P(drop within 28 days) at each weekly decision date (orange).](figures/top10_timelines.png)
 
@@ -230,11 +240,11 @@ realised future prices, and is piecewise constant in the model's scores (no usef
 
 Cross-entropy rewards putting probability on the correct bucket and treats every sample equally. The shopper's objective differs in three ways:
 
-1. **Dollar size is ignored.** A missed $5 drop on a $99 speaker costs the same loss as a missed $1,509 drop on a $5,282 gaming laptop (the costliest miss
-   in the out-of-fold results: *Gigabyte A16 Pro*, P(drop) = 0.06, dropped to $3,773). Cross-entropy can improve while savings get worse if the gains come from cheap products.
+1. **Dollar size is ignored.** A missed $5 drop on a $99 speaker costs the same loss as a missed $2,625 drop on a $10,499 gaming laptop (the costliest miss
+   in the out-of-fold results: *Alienware Area-51 18"*, P(drop) = 0.004, dropped to $7,874). Cross-entropy can improve while savings get worse if the gains come from cheap products.
 2. **The cost of being wrong is asymmetric.** A WAIT that is wrong can be very expensive: for a *Samsung 115" QN90F* at a $14,921 promotional price the model said
-   WAIT (P = 0.77), but the promotion ended and the price returned to $26,995. Bucket loss does not know that "no drop" can also mean "price goes up".
-3. **Waiting has a cost** (time), which the loss does not see; "always wait" illustrates this — 25 days of waiting for $7.
+   WAIT (P = 0.93), but the promotion ended and the price returned to $26,995. Bucket loss does not know that "no drop" can also mean "price goes up".
+3. **Waiting has a cost** (time), which the loss does not see; "always wait" illustrates this — 25 days of waiting for $8.53.
 
 **Mitigations used:** the WAIT threshold τ is tuned on dollars saved (not on log loss), in a nested way; the savings table is reported alongside the loss; and
 cost of waiting is reported as $ per day waited. **Further mitigations (future work):** price-weighted training (sample weight ∝ price), a cost-sensitive threshold
@@ -243,16 +253,18 @@ that includes the probability of a price *rise*, and predicting the full distrib
 ### Implications
 
 * JB Hi-Fi's pricing is **predictable from its own history**: promotional cycles repeat, so a product that has just returned to full price is a good candidate to wait for.
-* The probabilities are **well calibrated**, so they can be shown to users directly ("72% chance of a drop within 4 weeks").
-* The model is useful for shoppers even when the exact week is uncertain: the binary "drop within 28 days" signal alone captures 80% of the achievable savings.
+* On unseen products the probabilities are **well calibrated**, but on a later period they are over-confident; before showing "72% chance of a drop within 4 weeks"
+  to users, the probabilities should be recalibrated on the most recent weeks (e.g. isotonic regression), and the ranking used as the primary signal.
+* The model is useful for shoppers even when the exact week is uncertain: the binary "drop within 28 days" signal alone captures 86% of the achievable savings.
 
 ### Critical assessment of the evaluation
 
 * **The unseen-product split is optimistic.** GroupKFold holds out products, not time: the training folds contain *other* products from the *same weeks*. Because
   JB runs brand- and category-wide promotions, the model can partly learn "this brand was discounted in week X" from other products and apply it to the held-out one
-  (`vendor` being the top feature is consistent with this). The time split, which never trains on the test weeks, gives PR-AUC 0.52 instead of 0.72 —
-  this is the more honest estimate of real forecasting performance. Removing `vendor` in the time split lowers PR-AUC further (0.49), so brand information is still
-  genuinely useful going forward (brands have persistent discounting habits), but part of its apparent value in GroupKFold is borrowed from the test period.
+  (`vendor` being the top feature is consistent with this). The time split, which never trains on the test weeks, gives PR-AUC 0.51 instead of 0.85 and a log loss
+  worse than the per-category baseline — this is the more honest estimate of real forecasting performance. Removing `vendor` in the time split lowers PR-AUC (0.46)
+  but *improves* log loss (0.605) and calibration: brand information helps rank products going forward (brands have persistent discounting habits), but it also makes
+  the model over-confident when a brand's promotion calendar changes, and part of its apparent value in GroupKFold is borrowed from the test period.
 * **Near-duplicate products.** Colour or storage variants of the same model have different SKUs and can fall in different folds, which also inflates GroupKFold slightly.
 * **The time-split test period (late August) is a quiet period** with no major sale events, and only one time split fits in 5 months.
 
@@ -261,7 +273,8 @@ that includes the probability of a price *rise*, and predicting the full distrib
 * **Only ~5 months of data** (full catalogue from 1 May 2026): no Black Friday, Boxing Day or November Click Frenzy; the model cannot know yearly seasonality and was deliberately given no calendar features.
 * **Scrape gaps**: every 2-3 days, plus a 12-day gap (27 May - 8 Jun) during the end-of-financial-year sales; drop timing is only known to within a scrape interval.
 * **Censoring handled by exclusion**: decision days after 31 August are not used, wasting the last 4 weeks of data (a survival model could use them).
-* **20% product sample** for the published snapshot; results on the full catalogue may differ slightly.
+* **Probability drift over time**: calibration degrades on a later period (ECE 0.071); a production system would need periodic retraining and recalibration.
+* **Price errors in the source data**: a few listings show implausible jumps (e.g. a $2,539 tally light "dropping" to $179), which pass the persistence rule and count as drops.
 * **Missing drivers**: JB Perks member coupons, in-store-only prices, supplier promotions, new-model launches.
 * **Partial competitor coverage**: only 13% of samples match The Good Guys by model number; Harvey Norman data stopped on 20 Aug 2026 and was not used.
 * Data scraped from public retailer websites, used for non-commercial academic purposes only.
@@ -288,6 +301,12 @@ that includes the probability of a price *rise*, and predicting the full distrib
 | Glitch prices | Single-scrape price dips that revert immediately. | Persistence rule: a drop counts only if the next scrape is also >= 5% lower. |
 | Duplicate rows | ~1.5% of SKU-date pairs appear twice (rarely with different prices). | Collapse to the minimum price per SKU per day. |
 | Leakage risk | `jb_catalog_latest.max_historical_price` is computed over the full history (including the future of past decision dates). | Not used as a feature; all features use windows ending at day *t*. |
+| Sample vs full data | The first complete run used a 20% random sample of products (exported before the direct database connection was set up). On the full catalogue, GroupKFold PR-AUC rose from 0.72 to 0.85, but time-split log loss fell *behind* the baseline, which the sample had not shown. | Re-ran everything on the full data and report the full-data numbers, including the unfavourable one. |
+| Choosing the "Top 10" | My first rule (most complete scrape history first) picked cheap accessories (e.g. a $150 phone cage) and no TV, because 2026 TVs launched after scraping began. | Coverage within 10 points of the category's best, then sold at The Good Guys, then highest price. |
+| Sample vs full data | The first complete run used a 20% random sample of products (exported before the direct database connection was set up). On the full catalogue, GroupKFold PR-AUC rose from 0.72 to 0.85, but time-split log loss fell *behind* the baseline, which the sample had not shown. | Re-ran everything on the full data and report the full-data numbers, including the unfavourable one. |
+| Choosing the "Top 10" | My first rule (most complete scrape history first) picked cheap accessories (e.g. a $150 phone cage) and no TV, because 2026 TVs launched after scraping began. | Coverage within 10 points of the category's best, then sold at The Good Guys, then highest price. |
+| Sample vs full data | The first complete run used a 20% random sample of products (exported before the direct database connection was set up). On the full catalogue, GroupKFold PR-AUC rose from 0.72 to 0.85, but time-split log loss fell *behind* the baseline, which the sample had not shown. | Re-ran everything on the full data and report the full-data numbers, including the unfavourable one. |
+| Choosing the "Top 10" | My first rule (most complete scrape history first) picked cheap accessories (e.g. a $150 phone cage) and no TV, because 2026 TVs launched after scraping began. | Coverage within 10 points of the category's best, then sold at The Good Guys, then highest price. |
 | Safety of my database | The project must not modify production data. | Export runs in a session forced read-only (`SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY` + check), and the notebook never connects to Supabase. |
 
 ## 3.2 Use of AI tools
@@ -317,6 +336,6 @@ only discovered from the sample, so "buyable" had to be redefined as "not known 
 |---|---|---|---|
 | **LightGBM internals** (histogram-based split finding, leaf-wise tree growth, how categorical splits are chosen) | It is the model. | Compared against two baselines on held-out products and a later time period; early stopping on grouped validation data prevents over-fitting. | Read the LightGBM documentation on parameters (`num_leaves`, `min_child_samples`, `feature_fraction`); I understand the boosting update (fit trees to gradients of the loss) but not the exact split-finding algorithm. |
 | **Softmax + cross-entropy in the multiclass objective** | Produces the 4-bucket probabilities. | Probabilities sum to 1 and the reliability curve is on the diagonal. | Worked the one-sample example by hand: if the true bucket gets probability 0.15, loss = −ln 0.15 = 1.90. |
-| **Huber loss parameter** (`alpha` = δ in LightGBM) | Controls where the depth loss switches from squared to absolute error. | Depth MAE beats the median baseline (5.0 vs 8.1 pp). | Confirmed in the LightGBM docs that `alpha` is δ for `objective=huber`; I did not tune it. |
-| **GroupKFold vs time split** | Decides how honest the evaluation is. | The two splits give different answers (0.72 vs 0.52 PR-AUC), which I can explain (same-week promotions). | Reasoned through which information each split lets the model see. |
+| **Huber loss parameter** (`alpha` = δ in LightGBM) | Controls where the depth loss switches from squared to absolute error. | Depth MAE beats the median baseline (3.8 vs 7.9 pp). | Confirmed in the LightGBM docs that `alpha` is δ for `objective=huber`; I did not tune it. |
+| **GroupKFold vs time split** | Decides how honest the evaluation is. | The two splits give different answers (0.85 vs 0.51 PR-AUC), which I can explain (same-week promotions). | Reasoned through which information each split lets the model see. |
 | **Bootstrap confidence intervals by SKU** | Uncertainty of the metrics. | Intervals are narrow and non-overlapping between model and baseline. | I understand resampling whole products (not rows) because rows of one product are correlated; I did not study bootstrap theory formally. |
