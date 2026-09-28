@@ -33,21 +33,23 @@ Answer short. "I don't know, I would check X" is a valid, point-earning answer.
 
 **Why cross-entropy and not accuracy?** 83% of samples are "no drop", so always predicting "no drop" gets 83% accuracy and is useless. Cross-entropy rewards good probabilities.
 
-**Why PR-AUC?** Drops are the rare class; PR-AUC focuses on how precisely the model finds them. Random guessing gives PR-AUC = drop rate (0.17).
+**Why PR-AUC?** Drops are the rare class; PR-AUC focuses on how precisely the model finds them. Random guessing gives PR-AUC = drop rate (0.16).
 
 **Why GroupKFold?** Rows of the same product in consecutive weeks are almost identical; a random split would let the model memorise the product.
 
 **Why is the time-split score lower?** GroupKFold trains on other products from the *same weeks*; if JB discounts a whole brand that week, the model sees it. The time split never sees the test weeks → honest.
 
-**Why no class weights?** Tested: same PR-AUC (0.51 vs 0.52) but ECE 0.083 vs 0.046 — probabilities get worse, and the BUY/WAIT rule relies on them.
+**Why no class weights?** Tested on the time split: PR-AUC 0.49 vs 0.51, log loss 0.678 vs 0.640, ECE 0.080 vs 0.071 — worse on every metric.
+
+**Why is the later-period log loss worse than the baseline?** Log loss punishes confident mistakes; some brands' late-August promotions did not follow July's pattern, and the model was confidently wrong. It still ranks drops far better (PR-AUC 0.51 vs 0.24). Fix: recalibrate on recent weeks (isotonic regression), retrain regularly.
 
 **Why Huber for depth?** Squared error would be dominated by rare 40-60% clearance drops; Huber is quadratic below δ = 5 pp and linear above.
 
-**How many trees / leaves?** Up to 63 leaves per tree, learning rate 0.05, ~110-170 trees per fold (early stopping, patience 50).
+**How many trees / leaves?** Up to 63 leaves per tree, learning rate 0.05, ~730-940 trees per fold (early stopping, patience 50).
 
-**How is the WAIT threshold chosen?** Maximise mean dollars saved on the other 4 folds (nested); it came out 0.20 in every fold.
+**How is the WAIT threshold chosen?** Maximise mean dollars saved on the other 4 folds (nested); it came out 0.15 in every fold.
 
-**Why 0.20 and not 0.5?** Waiting when a drop does not come usually costs little (price mostly stays the same), but catching a drop saves a lot → the optimum is low.
+**Why 0.15 and not 0.5?** Waiting when a drop does not come usually costs little (price mostly stays the same), but catching a drop saves a lot → the optimum is low.
 
 **Is 5% arbitrary?** Yes, a design choice (smaller changes are noise / rounding); a sensitivity check with other thresholds is future work.
 
@@ -55,8 +57,8 @@ Answer short. "I don't know, I would check X" is a valid, point-earning answer.
 
 **What is censoring and how did you handle it?** For decision days after 31 Aug the 28-day future is not yet observed. I excluded them; a survival model could use them (future work).
 
-**Did competitor prices help?** No: PR-AUC 0.804 → 0.800, log loss 0.740 → 0.735. JB's own history already contains the signal.
+**Did competitor prices help?** Slightly: PR-AUC 0.900 → 0.904, log loss 0.530 → 0.522, +$0.80 saved per purchase, on the 2,095 products both retailers sell. Consistent with price matching, but small next to JB's own history.
 
-**Why only a 20% sample?** To keep the public snapshot small for GitHub/Colab; the export script can produce the full catalogue.
+**Why did the numbers change from the first run?** The first run used a 20% product sample; the final run uses the full catalogue (15,322 products).
 
 **Biggest limitation?** Only ~5 months: no Black Friday/Boxing Day, so no seasonality.

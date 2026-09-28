@@ -31,7 +31,7 @@ img { max-width: 100%; display: block; margin: 8px auto; }
 """
 
 MATHJAX = """
-<script>window.MathJax = {tex: {inlineMath: [['$', '$'], ['\\\\(', '\\\\)']], displayMath: [['$$', '$$'], ['\\\\[', '\\\\]']]}};</script>
+<script>window.MathJax = {tex: {inlineMath: [['\\\\(', '\\\\)']], displayMath: [['\\\\[', '\\\\]']]}};</script>
 <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml.js"></script>
 """
 
@@ -52,10 +52,12 @@ def main() -> None:
     maths = []
 
     def stash(m):
-        maths.append(m.group(0))
+        s = m.group(0)
+        maths.append(rf"\[{s[2:-2]}\]" if s.startswith("$$") else rf"\({s[1:-1]}\)")
         return f"@@MATH{len(maths) - 1}@@"
 
-    body = re.sub(r"\$\$.+?\$\$|\$[^$\n]+?\$", stash, body, flags=re.S)
+    # a "$" followed by a digit or space is currency, not the start of maths
+    body = re.sub(r"\$\$.+?\$\$|\$(?![\d\s])[^$\n]+?\$", stash, body, flags=re.S)
     html_body = markdown.markdown(body, extensions=["tables", "fenced_code"])
     html_body = re.sub(r"@@MATH(\d+)@@", lambda m: html.escape(maths[int(m.group(1))]), html_body)
 

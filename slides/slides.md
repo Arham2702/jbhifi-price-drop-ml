@@ -20,7 +20,7 @@ recent price changes (1-28 days), price vs its own max/min, days since last chan
 
 ## Slide 2 — Model and loss (1:30) — *the part I studied most*
 
-* Data: my Supabase scraper, JB catalogue May-Sep 2026; 20% product sample → **3,051 products, 33,486 weekly decision points**; 83% have no drop.
+* Data: my Supabase scraper, JB catalogue May-Sep 2026 → **15,322 products, 175,038 weekly decision points**; 84% have no drop.
 * **LightGBM**: sum of trees per class → softmax → probabilities. **Loss = cross-entropy** −log p(true bucket).
   Depth: separate LightGBM with **Huber loss** (δ = 5 pp) — robust to 50% clearance drops.
 * Trees because the features are tabular, mixed, non-linear; early stopping on 10% of *training products*.
@@ -35,13 +35,15 @@ recent price changes (1-28 days), price vs its own max/min, days since last chan
 
 | | per-category baseline | LightGBM |
 |---|---|---|
-| unseen products (5-fold GroupKFold) PR-AUC | 0.25 | **0.72** |
-| later period (train ≤ 15 Jul, test 12-31 Aug) PR-AUC | 0.24 | **0.52** |
-| log loss (GroupKFold) | 0.618 | **0.405** |
-| depth error | 8.1 pp | **5.0 pp** |
+| unseen products (5-fold GroupKFold) PR-AUC | 0.25 | **0.85** |
+| later period (train ≤ 15 Jul, test 12-31 Aug) PR-AUC | 0.24 | **0.51** |
+| log loss (GroupKFold) | 0.601 | **0.271** |
+| log loss (later period) | **0.580** | 0.640 |
+| depth error | 7.9 pp | **3.8 pp** |
 
-Calibration: on the diagonal (ECE 0.016).
+Calibration on unseen products: on the diagonal (ECE 0.008).
 **Critical point:** GroupKFold lets other products of the *same brand in the same week* into training → brand-wide promotions leak; the time split is the honest estimate.
+On the later period the model still ranks drops twice as well, but is over-confident (log loss worse than baseline) → needs recalibration on recent weeks.
 
 > Show notebook: reliability curve (cell 28), time-split table (cell 33).
 
@@ -49,10 +51,10 @@ Calibration: on the diagonal (ECE 0.016).
 
 ## Slide 4 — Does it save money? + research question (1:00)
 
-* Buy-or-wait simulation: **model saves $21.94 per purchase (CI $19-25), 80% of a perfect-foresight oracle, waiting 4.6 days on average**;
-  "always wait" saves $7 after 25 days.
+* Buy-or-wait simulation: **model saves $23.57 per purchase (CI $22.31-24.82), 86% of a perfect-foresight oracle, waiting 4.1 days on average**;
+  "always wait" saves $8.53 after 25 days.
 * **Loss ≠ objective:** cross-entropy treats a $5 and a $1,500 miss the same; worst WAIT error: a Samsung 115" TV whose promo ended ($14,921 → $26,995). Threshold τ tuned on dollars, not on loss.
-* **Research question:** do The Good Guys' prices help? **No** — PR-AUC 0.80 vs 0.80; slightly better calibration only.
-* Demo: `predict_drop("902842", "2026-09-28")` → Samsung 65" R95H TV, P(drop) 0.72, **WAIT**.
+* **Research question:** do The Good Guys' prices help? **A little** — on 2,095 shared products every metric improves slightly (PR-AUC 0.900 → 0.904, +$0.80 per purchase).
+* Demo: `predict_drop(892006, "2026-09-28")` → LG 97" OLED G6 at $29,995, back to full price on 25 Sep, P(drop) 0.68, **WAIT**.
 
 > End on the live demo (cell 41).

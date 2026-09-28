@@ -53,7 +53,7 @@ Missing values (e.g. a product first seen 10 days ago has no 28-day return) are 
 1. A probability vector $\hat{\mathbf p} = (\hat p_0, \hat p_1, \hat p_2, \hat p_3)$, summing to 1, over *when the first drop of at least 5% happens*:
    within 1-7 days, 8-14 days, 15-28 days, or no such drop within 28 days. A drop at day $t+d$ is counted only if the *next* scrape is also at least 5% below today's price (persistence rule against one-scrape glitches).
 2. A real number: the expected depth of that first drop, in percent of today's price.
-3. Derived for deployment: $P(\text{drop within 28 days}) = 1-\hat p_3$, the expected price if a drop happens, and a recommendation: **WAIT** if $1-\hat p_3 > \tau$, else **BUY NOW** ($\tau$ tuned on savings, section 2.3).
+3. Derived for deployment: $P(\text{drop within 28 days}) = 1-\hat p_3$, the expected price if a drop happens, and a recommendation: **WAIT** if $\hat p_0 + \hat p_1 + \hat p_2 > \tau$, else **BUY NOW** ($\tau$ tuned on savings, section 2.3).
 
 Deployment interface in the notebook: `predict_drop(sku, as_of_date) -> {p_bucket, p_drop_28d, expected_drop_pct_if_drop, expected_price_if_drop, recommendation}`.
 
@@ -121,7 +121,7 @@ A neural sequence model was considered but would need more data per product than
   A random row split would leak: consecutive weeks of the same product are nearly identical.
 * **Secondary split: time** — train on decision dates up to 15 July, 28-day gap, test on 12-31 August.
 * **Metrics:** log loss (the training loss), multi-class Brier score, ROC-AUC and PR-AUC for "drop within 28 days" (PR-AUC because positives are rare),
-  expected calibration error (ECE), depth MAE in percentage points and dollars, skill scores $1 - \text{metric}_{model}/\text{metric}_{baseline}$,
+  expected calibration error (ECE), depth MAE in percentage points and dollars, skill scores $\text{skill} = 1 - \text{metric}_{model}/\text{metric}_{baseline}$,
   95% bootstrap CIs resampling SKUs, and the buy-or-wait savings simulation.
 
 ## 2.3 Results
@@ -301,10 +301,6 @@ that includes the probability of a price *rise*, and predicting the full distrib
 | Glitch prices | Single-scrape price dips that revert immediately. | Persistence rule: a drop counts only if the next scrape is also >= 5% lower. |
 | Duplicate rows | ~1.5% of SKU-date pairs appear twice (rarely with different prices). | Collapse to the minimum price per SKU per day. |
 | Leakage risk | `jb_catalog_latest.max_historical_price` is computed over the full history (including the future of past decision dates). | Not used as a feature; all features use windows ending at day *t*. |
-| Sample vs full data | The first complete run used a 20% random sample of products (exported before the direct database connection was set up). On the full catalogue, GroupKFold PR-AUC rose from 0.72 to 0.85, but time-split log loss fell *behind* the baseline, which the sample had not shown. | Re-ran everything on the full data and report the full-data numbers, including the unfavourable one. |
-| Choosing the "Top 10" | My first rule (most complete scrape history first) picked cheap accessories (e.g. a $150 phone cage) and no TV, because 2026 TVs launched after scraping began. | Coverage within 10 points of the category's best, then sold at The Good Guys, then highest price. |
-| Sample vs full data | The first complete run used a 20% random sample of products (exported before the direct database connection was set up). On the full catalogue, GroupKFold PR-AUC rose from 0.72 to 0.85, but time-split log loss fell *behind* the baseline, which the sample had not shown. | Re-ran everything on the full data and report the full-data numbers, including the unfavourable one. |
-| Choosing the "Top 10" | My first rule (most complete scrape history first) picked cheap accessories (e.g. a $150 phone cage) and no TV, because 2026 TVs launched after scraping began. | Coverage within 10 points of the category's best, then sold at The Good Guys, then highest price. |
 | Sample vs full data | The first complete run used a 20% random sample of products (exported before the direct database connection was set up). On the full catalogue, GroupKFold PR-AUC rose from 0.72 to 0.85, but time-split log loss fell *behind* the baseline, which the sample had not shown. | Re-ran everything on the full data and report the full-data numbers, including the unfavourable one. |
 | Choosing the "Top 10" | My first rule (most complete scrape history first) picked cheap accessories (e.g. a $150 phone cage) and no TV, because 2026 TVs launched after scraping began. | Coverage within 10 points of the category's best, then sold at The Good Guys, then highest price. |
 | Safety of my database | The project must not modify production data. | Export runs in a session forced read-only (`SET SESSION CHARACTERISTICS AS TRANSACTION READ ONLY` + check), and the notebook never connects to Supabase. |
