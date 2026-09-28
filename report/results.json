@@ -1,0 +1,393 @@
+{
+  "n_samples": 33486,
+  "n_skus": 3051,
+  "class_share": [
+    0.0593,
+    0.0492,
+    0.0605,
+    0.8309
+  ],
+  "cv_summary": {
+    "model": {
+      "log_loss": {
+        "mean": 0.4045,
+        "std": 0.0112
+      },
+      "brier": {
+        "mean": 0.1957,
+        "std": 0.0047
+      },
+      "roc_auc": {
+        "mean": 0.9061,
+        "std": 0.0093
+      },
+      "pr_auc": {
+        "mean": 0.7217,
+        "std": 0.0173
+      },
+      "ece": {
+        "mean": 0.0157,
+        "std": 0.0055
+      }
+    },
+    "base_overall": {
+      "log_loss": {
+        "mean": 0.6396,
+        "std": 0.0168
+      },
+      "brier": {
+        "mean": 0.3,
+        "std": 0.0097
+      },
+      "roc_auc": {
+        "mean": 0.5,
+        "std": 0.0
+      },
+      "pr_auc": {
+        "mean": 0.1691,
+        "std": 0.0063
+      },
+      "ece": {
+        "mean": 0.0054,
+        "std": 0.005
+      }
+    },
+    "base_type": {
+      "log_loss": {
+        "mean": 0.6179,
+        "std": 0.0136
+      },
+      "brier": {
+        "mean": 0.2924,
+        "std": 0.0084
+      },
+      "roc_auc": {
+        "mean": 0.6493,
+        "std": 0.0109
+      },
+      "pr_auc": {
+        "mean": 0.2499,
+        "std": 0.0155
+      },
+      "ece": {
+        "mean": 0.0117,
+        "std": 0.005
+      }
+    }
+  },
+  "skill": {
+    "base_overall": {
+      "log_loss_skill": 0.367465915654993,
+      "brier_skill": 0.34746022151554606
+    },
+    "base_type": {
+      "log_loss_skill": 0.34537977967963374,
+      "brier_skill": 0.3305336307165475
+    }
+  },
+  "depth_mae": {
+    "model_pp": 5.042242138002675,
+    "baseline_pp": 8.119501706021955,
+    "model_dollars": 42.655298882944024,
+    "baseline_dollars": 64.39956856800487
+  },
+  "bootstrap_ci": {
+    "model": {
+      "pr_auc": [
+        0.6983,
+        0.7472
+      ],
+      "log_loss": [
+        0.3855,
+        0.4248
+      ]
+    },
+    "base_type": {
+      "pr_auc": [
+        0.2382,
+        0.2666
+      ],
+      "log_loss": [
+        0.5988,
+        0.6396
+      ]
+    }
+  },
+  "per_type": [
+    {
+      "product_type": "GAMES HARDWARE",
+      "n": 3576,
+      "drop_rate": 0.1432,
+      "pr_auc_model": 0.4458,
+      "pr_auc_base": 0.1343
+    },
+    {
+      "product_type": "Wearables & Outdoor",
+      "n": 2637,
+      "drop_rate": 0.0743,
+      "pr_auc_model": 0.5269,
+      "pr_auc_base": 0.0695
+    },
+    {
+      "product_type": "COMMUNICATIONS",
+      "n": 1075,
+      "drop_rate": 0.253,
+      "pr_auc_model": 0.6592,
+      "pr_auc_base": 0.2385
+    },
+    {
+      "product_type": "SMALL APPLIANCES",
+      "n": 6955,
+      "drop_rate": 0.2013,
+      "pr_auc_model": 0.6818,
+      "pr_auc_base": 0.1929
+    },
+    {
+      "product_type": "VISUAL",
+      "n": 979,
+      "drop_rate": 0.2482,
+      "pr_auc_model": 0.6906,
+      "pr_auc_base": 0.2117
+    },
+    {
+      "product_type": "CAMERAS",
+      "n": 7805,
+      "drop_rate": 0.0787,
+      "pr_auc_model": 0.7476,
+      "pr_auc_base": 0.0723
+    },
+    {
+      "product_type": "COMPUTERS",
+      "n": 2578,
+      "drop_rate": 0.2727,
+      "pr_auc_model": 0.782,
+      "pr_auc_base": 0.2668
+    },
+    {
+      "product_type": "AUDIO",
+      "n": 6143,
+      "drop_rate": 0.1812,
+      "pr_auc_model": 0.7855,
+      "pr_auc_base": 0.1633
+    },
+    {
+      "product_type": "WHITEGOODS",
+      "n": 1738,
+      "drop_rate": 0.3504,
+      "pr_auc_model": 0.8187,
+      "pr_auc_base": 0.3275
+    }
+  ],
+  "top_features": {
+    "vendor": 0.2161,
+    "last_change_pct": 0.1104,
+    "rel_min_all": 0.1027,
+    "log_price": 0.0955,
+    "age_days": 0.066,
+    "days_since_drop": 0.0538,
+    "rel_mean_28": 0.0487,
+    "rel_min_28": 0.0438,
+    "days_since_change": 0.0432,
+    "days_since_rise": 0.0372
+  },
+  "time_split": {
+    "LightGBM": {
+      "log_loss": 0.5407,
+      "brier": 0.2441,
+      "roc_auc": 0.8212,
+      "pr_auc": 0.5172,
+      "ece": 0.0458,
+      "drop_rate": 0.1565
+    },
+    "LightGBM + class weights": {
+      "log_loss": 0.6261,
+      "brier": 0.2755,
+      "roc_auc": 0.8111,
+      "pr_auc": 0.5102,
+      "ece": 0.0825,
+      "drop_rate": 0.1565
+    },
+    "LightGBM without vendor": {
+      "log_loss": 0.5411,
+      "brier": 0.2468,
+      "roc_auc": 0.7972,
+      "pr_auc": 0.4845,
+      "ece": 0.0393,
+      "drop_rate": 0.1565
+    },
+    "baseline: overall": {
+      "log_loss": 0.6053,
+      "brier": 0.2804,
+      "roc_auc": 0.5,
+      "pr_auc": 0.1565,
+      "ece": 0.0117,
+      "drop_rate": 0.1565
+    },
+    "baseline: per type": {
+      "log_loss": 0.5897,
+      "brier": 0.2733,
+      "roc_auc": 0.6571,
+      "pr_auc": 0.2387,
+      "ece": 0.0166,
+      "drop_rate": 0.1565
+    }
+  },
+  "savings": {
+    "buy now": {
+      "mean_saving_$": 0.0,
+      "mean_saving_%": 0.0,
+      "share_of_oracle_%": 0.0,
+      "wait_rate_%": 0.0,
+      "mean_days_waited": 0.0,
+      "saving_per_day_waited_$": NaN
+    },
+    "always wait": {
+      "mean_saving_$": 7.03,
+      "mean_saving_%": -0.06,
+      "share_of_oracle_%": 25.72,
+      "wait_rate_%": 100.0,
+      "mean_days_waited": 25.329999923706055,
+      "saving_per_day_waited_$": 0.28
+    },
+    "model (tau tuned out-of-fold)": {
+      "mean_saving_$": 21.94,
+      "mean_saving_%": 2.54,
+      "share_of_oracle_%": 80.3,
+      "wait_rate_%": 24.14,
+      "mean_days_waited": 4.610000133514404,
+      "saving_per_day_waited_$": 4.76
+    },
+    "oracle": {
+      "mean_saving_$": 27.32,
+      "mean_saving_%": 3.33,
+      "share_of_oracle_%": 100.0,
+      "wait_rate_%": 17.97,
+      "mean_days_waited": 2.359999895095825,
+      "saving_per_day_waited_$": 11.59
+    }
+  },
+  "savings_ci": [
+    19.41,
+    25.15
+  ],
+  "tau_by_fold": {
+    "0": 0.2,
+    "1": 0.2,
+    "2": 0.2,
+    "3": 0.2,
+    "4": 0.2
+  },
+  "tau_final": 0.2,
+  "top10_predictions": [
+    {
+      "sku": "814982",
+      "as_of": "2026-09-28",
+      "price_now": 1199.0,
+      "p_drop_28d": 0.998,
+      "expected_drop_pct_if_drop": 24.8,
+      "expected_price_if_drop": 901.87,
+      "recommendation": "WAIT",
+      "title": "Sony BRAVIA Theatre System 6"
+    },
+    {
+      "sku": "654352",
+      "as_of": "2026-09-28",
+      "price_now": 1699.0,
+      "p_drop_28d": 0.562,
+      "expected_drop_pct_if_drop": 12.1,
+      "expected_price_if_drop": 1494.1,
+      "recommendation": "WAIT",
+      "title": "Canon EOS R50 Mirrorless Camera with RFS 18-45 + 55-210mm Twin Lens Kit"
+    },
+    {
+      "sku": "816143",
+      "as_of": "2026-09-28",
+      "price_now": 3099.0,
+      "p_drop_28d": 0.065,
+      "expected_drop_pct_if_drop": 17.0,
+      "expected_price_if_drop": 2572.27,
+      "recommendation": "BUY NOW",
+      "title": "Apple iPhone Air 1TB (Sky Blue)"
+    },
+    {
+      "sku": "315021",
+      "as_of": "2026-09-28",
+      "price_now": 6999.0,
+      "p_drop_28d": 0.001,
+      "expected_drop_pct_if_drop": 13.3,
+      "expected_price_if_drop": 6066.48,
+      "recommendation": "BUY NOW",
+      "title": "Apple MacBook Pro 16-inch with M5 Max Chip, 2TB/36GB (Space Black)"
+    },
+    {
+      "sku": "749727",
+      "as_of": "2026-09-28",
+      "price_now": 999.0,
+      "p_drop_28d": 0.194,
+      "expected_drop_pct_if_drop": 19.7,
+      "expected_price_if_drop": 802.66,
+      "recommendation": "BUY NOW",
+      "title": "Xbox Series X 1TB Digital Console (Robot White)"
+    },
+    {
+      "sku": "894682",
+      "as_of": "2026-09-28",
+      "price_now": 4499.0,
+      "p_drop_28d": 0.009,
+      "expected_drop_pct_if_drop": 9.9,
+      "expected_price_if_drop": 4055.0,
+      "recommendation": "BUY NOW",
+      "title": "Jura Z10 Fully Automatic Coffee Machine (Aluminium Black)"
+    },
+    {
+      "sku": "902842",
+      "as_of": "2026-09-28",
+      "price_now": 5295.0,
+      "p_drop_28d": 0.721,
+      "expected_drop_pct_if_drop": 18.7,
+      "expected_price_if_drop": 4303.57,
+      "recommendation": "WAIT",
+      "title": "Samsung 65\" R95H Micro RGB 4K Smart AI TV [2026]"
+    },
+    {
+      "sku": "650361",
+      "as_of": "2026-09-28",
+      "price_now": 4799.0,
+      "p_drop_28d": 0.974,
+      "expected_drop_pct_if_drop": 17.0,
+      "expected_price_if_drop": 3985.07,
+      "recommendation": "WAIT",
+      "title": "LG GF-V700BSLC 642L French Door Fridge with Instaview (Black Stainless)"
+    },
+    {
+      "sku": "10005762",
+      "as_of": "2026-09-28",
+      "price_now": 1248.85,
+      "p_drop_28d": 0.075,
+      "expected_drop_pct_if_drop": 13.3,
+      "expected_price_if_drop": 1083.05,
+      "recommendation": "BUY NOW",
+      "title": "Pioneer SPH-EVO107DAB Wireless AV Receiver 10.1\" HD Capacitive Display"
+    }
+  ],
+  "competitor_ablation": {
+    "JB features only": {
+      "log_loss": 0.7404,
+      "brier": 0.3765,
+      "roc_auc": 0.8797,
+      "pr_auc": 0.8044,
+      "ece": 0.0226,
+      "drop_rate": 0.3617,
+      "best_mean_saving_$": 58.275699615478516
+    },
+    "JB + The Good Guys features": {
+      "log_loss": 0.7346,
+      "brier": 0.3726,
+      "roc_auc": 0.8835,
+      "pr_auc": 0.7997,
+      "ece": 0.0177,
+      "drop_rate": 0.3617,
+      "best_mean_saving_$": 58.08489990234375
+    }
+  }
+}
