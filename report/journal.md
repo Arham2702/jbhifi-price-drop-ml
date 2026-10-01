@@ -136,9 +136,9 @@ expected calibration error (ECE), depth MAE in percentage points and dollars, sk
 
 ## 2.3 Results
 
-All numbers are from the saved run of the published notebook (LightGBM 4.7.0, scikit-learn 1.9.1). Re-running it on Colab, with other library
-versions, changes metrics only in the third decimal (for example GroupKFold PR-AUC 0.848 instead of 0.852, time-split log loss 0.615 instead of 0.640,
-model saving $23.37 instead of $23.57); every comparison and conclusion below is unchanged.
+All numbers and figures are from the Colab run saved in the published notebook. Re-running with other library versions (e.g. locally with
+LightGBM 4.7.0) changes metrics only in the third decimal (GroupKFold PR-AUC 0.852 instead of 0.848, model saving $23.57 instead of $23.37);
+every comparison and conclusion below is unchanged.
 
 **Label distribution.** 1-7 days: 5.8%, 8-14 days: 4.8%, 15-28 days: 5.7%, no drop within 28 days: 83.7%.
 
@@ -147,16 +147,16 @@ model saving $23.37 instead of $23.57); every comparison and conclusion below is
 
 | model                                      | log loss (lower better) | Brier             | ROC-AUC           | PR-AUC            | ECE           |
 | ------------------------------------------ | ----------------------- | ----------------- | ----------------- | ----------------- | ------------- |
-| Baseline A: overall class frequencies      | 0.624 ± 0.005           | 0.291 ± 0.003     | 0.500             | 0.163 ± 0.002     | 0.002         |
-| Baseline B: class frequencies per category | 0.601 ± 0.005           | 0.283 ± 0.003     | 0.655 ± 0.005     | 0.247 ± 0.005     | 0.003         |
-| **LightGBM**                               | **0.271 ± 0.008**       | **0.130 ± 0.004** | **0.953 ± 0.003** | **0.852 ± 0.006** | 0.008 ± 0.002 |
+| Baseline A: overall class frequencies      | 0.624 ± 0.008           | 0.291 ± 0.004     | 0.500             | 0.163 ± 0.003     | 0.003         |
+| Baseline B: class frequencies per category | 0.601 ± 0.006           | 0.283 ± 0.004     | 0.655 ± 0.005     | 0.247 ± 0.009     | 0.005         |
+| **LightGBM**                               | **0.276 ± 0.007**       | **0.133 ± 0.003** | **0.952 ± 0.002** | **0.848 ± 0.003** | 0.008 ± 0.002 |
 
 
-- Skill vs the per-category baseline: **54.9%** lower log loss, **54.0%** lower Brier score.
-- 95% bootstrap CIs (resampling SKUs): PR-AUC LightGBM [0.846, 0.860] vs baseline B [0.245, 0.261]; log loss [0.263, 0.278] vs [0.592, 0.610]. The intervals do not overlap.
+- Skill vs the per-category baseline: **54.1%** lower log loss, **53.1%** lower Brier score.
+- 95% bootstrap CIs (resampling SKUs): PR-AUC LightGBM [0.841, 0.856] vs baseline B [0.245, 0.260]; log loss [0.268, 0.282] vs [0.592, 0.610]. The intervals do not overlap.
 - Calibration: the reliability curve lies on the diagonal (ECE 0.008): when the model says 30%, about 30% of those products drop.
-- **Drop depth** (samples with a drop): MAE **3.8 percentage points ($32.56)** vs 7.9 pp ($62.99) for the per-category median baseline.
-- Every category beats its baseline; the weakest is games hardware (PR-AUC 0.70 vs 0.14), the strongest phones (0.95 vs 0.26).
+- **Drop depth** (samples with a drop): MAE **3.8 percentage points ($32.27)** vs 7.9 pp ($63.04) for the per-category median baseline.
+- Every category beats its baseline; the weakest is games hardware (PR-AUC 0.69 vs 0.14), the strongest phones (0.94 vs 0.26).
 
 ![Reliability curve (left) and PR-AUC per category against the random-guess level (right).](figures/calibration_and_categories.png)
 
@@ -165,15 +165,15 @@ model saving $23.37 instead of $23.57); every comparison and conclusion below is
 
 | true / predicted | 1-7 d    | 8-14 d   | 15-28 d  | no drop  |
 | -------------- | -------- | -------- | -------- | -------- |
-| 1-7 days       | **0.65** | 0.04     | 0.03     | 0.29     |
-| 8-14 days      | 0.07     | **0.60** | 0.04     | 0.29     |
-| 15-28 days     | 0.05     | 0.04     | **0.51** | 0.40     |
+| 1-7 days       | **0.64** | 0.04     | 0.03     | 0.30     |
+| 8-14 days      | 0.07     | **0.59** | 0.04     | 0.30     |
+| 15-28 days     | 0.05     | 0.05     | **0.48** | 0.42     |
 | no drop        | 0.01     | 0.01     | 0.01     | **0.98** |
 
 
-Near-term drops are recognised best; drops 15-28 days away are predicted as "no drop" 40% of the time — the further ahead, the less the current price pattern says.
+Near-term drops are recognised best; drops 15-28 days away are predicted as "no drop" 42% of the time — the further ahead, the less the current price pattern says.
 
-**What the model uses** (share of split gain): `vendor` 23.0%, `rel_min_all` 10.5%, `last_change_pct` 10.5%, `log_price` 10.1%, `age_days` 7.1%, `days_since_drop` 5.3%.
+**What the model uses** (share of split gain, approximate): `vendor` 23%, `rel_min_all` 11%, `last_change_pct` 10.5%, `log_price` 10%, `age_days` 7%, `days_since_drop` 5.5%.
 The dominant pattern (visible in the Top-10 plots) is JB's promotional cycle: a product that has just returned from a sale price to its regular price
 (`last_change_pct` > 0, price well above its historical minimum) is likely to be discounted again soon.
 
@@ -186,13 +186,13 @@ The dominant pattern (visible in the Top-10 plots) is JB's promotional cycle: a 
 | ------------------------- | --------- | --------- | --------- | --------- | ----- |
 | Baseline A: overall       | 0.604     | 0.280     | 0.500     | 0.156     | 0.004 |
 | Baseline B: per category  | **0.580** | 0.272     | 0.667     | 0.243     | 0.022 |
-| **LightGBM**              | 0.640     | 0.259     | **0.824** | **0.508** | 0.071 |
-| LightGBM + class weights  | 0.678     | 0.274     | 0.816     | 0.492     | 0.080 |
-| LightGBM without `vendor` | 0.605     | **0.259** | 0.787     | 0.463     | 0.058 |
+| **LightGBM**              | 0.615     | **0.256** | **0.824** | **0.508** | 0.067 |
+| LightGBM + class weights  | 0.677     | 0.275     | 0.817     | 0.497     | 0.078 |
+| LightGBM without `vendor` | 0.603     | 0.258     | 0.789     | 0.467     | 0.059 |
 
 
 On a later period the picture is mixed. The model still **ranks** products far better than the baselines (PR-AUC 0.51 vs 0.24, ROC-AUC 0.82 vs 0.67)
-and has the best Brier score, but its **log loss is worse than the per-category baseline** (0.640 vs 0.580) and it is less well calibrated (ECE 0.071).
+and has the best Brier score, but its **log loss is worse than the per-category baseline** (0.615 vs 0.580) and it is less well calibrated (ECE 0.067).
 Log loss punishes confident mistakes very heavily: promotions in late August did not repeat July's pattern for some brands, and the model was confidently wrong on them.
 So the model is reliable for *ordering* products by how likely they are to drop, but its probabilities should be recalibrated on recent data before being shown to users (section 2.4).
 Class weighting made both ranking and calibration worse, confirming the decision to train unweighted.
@@ -204,11 +204,11 @@ Class weighting made both ranking and calibration worse, confirming the decision
 | ------------------------------------------------------- | ------------------------- | ------------ | ----------------------- | --------- | ---------------- | ---------------------- |
 | Buy now                                                 | 0.00                      | 0.00         | 0%                      | 0%        | 0                | —                      |
 | Always wait (buy at first drop, else day 28)            | 8.53                      | −0.29        | 31%                     | 100%      | 25.4             | 0.34                   |
-| **Model** (WAIT if P(drop) > τ, τ = 0.15 in every fold) | **23.57**                 | **2.62**     | **86%**                 | 23%       | **4.1**          | **5.73**               |
+| **Model** (WAIT if P(drop) > τ; τ = 0.15 in 4 folds, 0.20 in 1) | **23.37**                 | **2.60**     | **86%**                 | 22.5%     | **4.0**          | **5.82**               |
 | Oracle (knows the future)                               | 27.29                     | 3.19         | 100%                    | 17%       | 2.3              | 11.92                  |
 
 
-95% bootstrap CI for the model's mean saving: **[$22.31, $24.82]** per purchase. Following the model captures 86% of the savings a perfect-foresight
+95% bootstrap CI for the model's mean saving: **[$22.13, $24.77]** per purchase. Following the model captures 86% of the savings a perfect-foresight
 shopper would get, while waiting on average about 4 days; "always wait" makes shoppers wait 25 days for a third of the benefit
 (and on average *loses* 0.29% of the price, because prices sometimes rise while waiting).
 
@@ -219,11 +219,11 @@ shopper would get, while waiting on average about 4 days; "always wait" makes sh
 
 | features                                                   | log loss  | Brier     | ROC-AUC   | PR-AUC    | ECE       | best mean saving |
 | ---------------------------------------------------------- | --------- | --------- | --------- | --------- | --------- | ---------------- |
-| JB features only                                           | 0.530     | 0.264     | 0.938     | 0.900     | 0.019     | $67.37           |
-| JB + The Good Guys (`tgg_gap`, `tgg_ret_7`, `tgg_cheaper`) | **0.522** | **0.260** | **0.940** | **0.904** | **0.016** | **$68.17**       |
+| JB features only                                           | 0.531     | 0.266     | 0.937     | 0.902     | 0.013     | $67.09           |
+| JB + The Good Guys (`tgg_gap`, `tgg_ret_7`, `tgg_cheaper`) | **0.523** | **0.262** | **0.939** | **0.905** | **0.012** | **$67.36**       |
 
 
-Answer: **a small, consistent improvement.** Competitor features improve every metric slightly (log loss −1.5%, PR-AUC +0.004, +$0.80 saved per purchase),
+Answer: **a small, consistent improvement.** Competitor features improve every metric slightly (log loss −1.5%, PR-AUC +0.003, +$0.27 saved per purchase),
 consistent with price matching, but the gain is small compared with what JB's own price history provides.
 Products sold by both retailers drop much more often (36% vs 16%), so they are also where a shopper gains most from waiting.
 
@@ -235,16 +235,16 @@ preferring products The Good Guys also sells, then the highest price.
 
 | category            | product                            | price now | P(drop ≤ 28 d) | expected drop if it drops | recommendation |
 | ------------------- | ---------------------------------- | --------- | -------------- | ------------------------- | -------------- |
-| Audio               | JBL BAR 1300 MK2 soundbar          | $1,999    | 0.016          | 9.8%                      | BUY NOW        |
-| Cameras             | Antigravity A1 8K 360 drone bundle | $2,799    | 0.128          | 17.1%                     | BUY NOW        |
-| Phones              | Apple iPhone Air 1TB               | $3,099    | 0.007          | 17.3%                     | BUY NOW        |
-| Computers           | Apple MacBook Pro 16" M5 Max 2TB   | $7,999    | 0.000          | 17.5%                     | BUY NOW        |
-| Games hardware      | Xbox Series X 1TB Digital          | $999      | 0.015          | 19.6%                     | BUY NOW        |
-| Health & beauty     | NutriBullet Baby Steam & Blend     | $179      | 0.985          | 20.5% (→ $142)            | WAIT           |
-| Small appliances    | Jura Z10 coffee machine            | $4,499    | 0.009          | 5.1%                      | BUY NOW        |
-| TVs                 | LG 97" OLED evo G6 [2026]          | $29,995   | 0.677          | 9.0% (→ $27,287)          | WAIT           |
-| Whitegoods          | ASKO heat-pump drying cabinet      | $6,999    | 0.007          | 6.8%                      | BUY NOW        |
-| Wearables & Outdoor | Pioneer SPH-EVO107DAB AV receiver  | $1,249    | 0.096          | 8.3%                      | BUY NOW        |
+| Audio               | JBL BAR 1300 MK2 soundbar          | $1,999    | 0.015          | 10.0%                     | BUY NOW        |
+| Cameras             | Antigravity A1 8K 360 drone bundle | $2,799    | 0.122          | 16.3%                     | BUY NOW        |
+| Phones              | Apple iPhone Air 1TB               | $3,099    | 0.016          | 19.2%                     | BUY NOW        |
+| Computers           | Apple MacBook Pro 16" M5 Max 2TB   | $7,999    | 0.000          | 17.0%                     | BUY NOW        |
+| Games hardware      | Xbox Series X 1TB Digital          | $999      | 0.016          | 19.9%                     | BUY NOW        |
+| Health & beauty     | NutriBullet Baby Steam & Blend     | $179      | 0.987          | 19.6% (→ $144)            | WAIT           |
+| Small appliances    | Jura Z10 coffee machine            | $4,499    | 0.005          | 7.4%                      | BUY NOW        |
+| TVs                 | LG 97" OLED evo G6 [2026]          | $29,995   | 0.664          | 8.6% (→ $27,414)          | WAIT           |
+| Whitegoods          | ASKO heat-pump drying cabinet      | $6,999    | 0.004          | 7.2%                      | BUY NOW        |
+| Wearables & Outdoor | Pioneer SPH-EVO107DAB AV receiver  | $1,249    | 0.134          | 7.4%                      | BUY NOW        |
 
 
 Most flagships get BUY NOW: their prices have been flat for two weeks or more, a pattern that rarely precedes a drop within 28 days (Apple products
@@ -269,9 +269,9 @@ realised future prices, and is piecewise constant in the model's scores (no usef
 Cross-entropy rewards putting probability on the correct bucket and treats every sample equally. The shopper's objective differs in three ways:
 
 1. **Dollar size is ignored.** A missed $5 drop on a $99 speaker costs the same loss as a missed $2,625 drop on a $10,499 gaming laptop (the costliest miss
-  in the out-of-fold results: *Alienware Area-51 18"*, P(drop) = 0.004, dropped to $7,874). Cross-entropy can improve while savings get worse if the gains come from cheap products.
+  in the out-of-fold results: *Alienware Area-51 18"*, P(drop) = 0.014, dropped to $7,874). Cross-entropy can improve while savings get worse if the gains come from cheap products.
 2. **The cost of being wrong is asymmetric.** A WAIT that is wrong can be very expensive: for a *Samsung 115" QN90F* at a $14,921 promotional price the model said
-  WAIT (P = 0.93), but the promotion ended and the price returned to $26,995. Bucket loss does not know that "no drop" can also mean "price goes up".
+  WAIT (P = 0.80), but the promotion ended and the price returned to $26,995. Bucket loss does not know that "no drop" can also mean "price goes up".
 3. **Waiting has a cost** (time), which the loss does not see; "always wait" illustrates this — 25 days of waiting for $8.53.
 
 **Mitigations used:** the WAIT threshold τ is tuned on dollars saved (not on log loss), in a nested way; the savings table is reported alongside the loss; and
@@ -292,8 +292,8 @@ to users, the probabilities should be recalibrated on the most recent weeks (e.g
 - **The unseen-product split is optimistic.** GroupKFold holds out products, not time: the training folds contain *other* products from the *same weeks*. Because
 JB runs brand- and category-wide promotions, the model can partly learn "this brand was discounted in week X" from other products and apply it to the held-out one
 (`vendor` being the top feature is consistent with this). The time split, which never trains on the test weeks, gives PR-AUC 0.51 instead of 0.85 and a log loss
-worse than the per-category baseline — this is the more honest estimate of real forecasting performance. Removing `vendor` in the time split lowers PR-AUC (0.46)
-but *improves* log loss (0.605) and calibration: brand information helps rank products going forward (brands have persistent discounting habits), but it also makes
+worse than the per-category baseline — this is the more honest estimate of real forecasting performance. Removing `vendor` in the time split lowers PR-AUC (0.47)
+but *improves* log loss (0.603) and calibration: brand information helps rank products going forward (brands have persistent discounting habits), but it also makes
 the model over-confident when a brand's promotion calendar changes, and part of its apparent value in GroupKFold is borrowed from the test period.
 - **Near-duplicate products.** Colour or storage variants of the same model have different SKUs and can fall in different folds, which also inflates GroupKFold slightly.
 - **The time-split test period (late August) is a quiet period** with no major sale events, and only one time split fits in 5 months.
@@ -305,7 +305,7 @@ the model over-confident when a brand's promotion calendar changes, and part of 
 - **Only ~5 months of data** (full catalogue from 1 May 2026): no Black Friday, Boxing Day or November Click Frenzy; the model cannot know yearly seasonality and was deliberately given no calendar features.
 - **Scrape gaps**: every 2-3 days, plus a 12-day gap (27 May - 8 Jun) during the end-of-financial-year sales; drop timing is only known to within a scrape interval.
 - **Censoring handled by exclusion**: decision days after 31 August are not used, wasting the last 4 weeks of data (a survival model could use them).
-- **Probability drift over time**: calibration degrades on a later period (ECE 0.071); a production system would need periodic retraining and recalibration.
+- **Probability drift over time**: calibration degrades on a later period (ECE 0.067); a production system would need periodic retraining and recalibration.
 - **Price errors in the source data**: a few listings show implausible jumps (e.g. a $2,539 tally light "dropping" to $179), which pass the persistence rule and count as drops.
 - **Missing drivers**: JB Perks member coupons, in-store-only prices, supplier promotions, new-model launches.
 - **Partial competitor coverage**: only 13% of samples match The Good Guys by model number; Harvey Norman data stopped on 20 Aug 2026 and was not used.
